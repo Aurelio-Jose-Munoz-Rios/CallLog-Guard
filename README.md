@@ -16,8 +16,3 @@ La aplicación utiliza los siguientes permisos de Android:
   <img src="imagenes_documentacion/3.jpeg" alt="Imagen 3" width="260">
 </p>
 
-![](imagenes_documentacion/1.jpeg)
-
-![](imagenes_documentacion/2.jpeg)
-
-![](imagenes_documentacion/3.jpeg)
