@@ -9,3 +9,5 @@ La aplicación utiliza los siguientes permisos de Android:
 ```xml
 <uses-permission android:name="android.permission.READ_CALL_LOG" />
 <uses-permission android:name="android.permission.READ_CONTACTS" />
+
+![](imagenes_documentacion/1.jpeg)
