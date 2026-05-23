@@ -9,3 +9,10 @@ La aplicación utiliza los siguientes permisos de Android:
 ```xml
 <uses-permission android:name="android.permission.READ_CALL_LOG" />
 <uses-permission android:name="android.permission.READ_CONTACTS" />
+```
+<p align="center">
+  <img src="imagenes_documentacion/1.jpeg" alt="Imagen 1" width="260">
+  <img src="imagenes_documentacion/2.jpeg" alt="Imagen 2" width="260">
+  <img src="imagenes_documentacion/3.jpeg" alt="Imagen 3" width="260">
+</p>
+
