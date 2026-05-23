@@ -4,13 +4,18 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.CallLog
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class MainActivity : FlutterActivity() {
     private val channelName = "registro_llamadas/call_log"
@@ -54,20 +59,40 @@ class MainActivity : FlutterActivity() {
                     }
                 }
 
+                "scheduleDailyCallSync" -> {
+                    if (!hasRequiredPermissions()) {
+                        result.error(
+                            "PERMISSION_DENIED",
+                            "No se concedieron los permisos necesarios.",
+                            null
+                        )
+                        return@setMethodCallHandler
+                    }
+
+                    scheduleDailyCallSync()
+                    result.success(true)
+                }
+
                 else -> {
                     result.notImplemented()
                 }
             }
         }
+
+        if (hasRequiredPermissions()) {
+            scheduleDailyCallSync()
+        }
     }
 
     private fun requestCallPermissions(result: MethodChannel.Result) {
         if (hasRequiredPermissions()) {
+            scheduleDailyCallSync()
             result.success(true)
             return
         }
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            scheduleDailyCallSync()
             result.success(true)
             return
         }
@@ -115,10 +140,16 @@ class MainActivity : FlutterActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
-        if (requestCode != permissionRequestCode) return
+        if (requestCode != permissionRequestCode) {
+            return
+        }
 
         val granted = grantResults.isNotEmpty() &&
             grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+
+        if (granted) {
+            scheduleDailyCallSync()
+        }
 
         pendingPermissionResult?.success(granted)
         pendingPermissionResult = null
@@ -219,5 +250,46 @@ class MainActivity : FlutterActivity() {
             is Float -> value.toLong()
             else -> defaultValue
         }
+    }
+
+    private fun scheduleDailyCallSync() {
+        val initialDelay = calculateInitialDelayMillis(
+            targetHour = 23,
+            targetMinute = 59
+        )
+
+        val request = PeriodicWorkRequestBuilder<OutgoingCallSyncWorker>(
+            1,
+            TimeUnit.DAYS
+        )
+            .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
+            .addTag(OutgoingCallSyncWorker.WORK_NAME)
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            OutgoingCallSyncWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            request
+        )
+    }
+
+    private fun calculateInitialDelayMillis(
+        targetHour: Int,
+        targetMinute: Int
+    ): Long {
+        val now = Calendar.getInstance()
+
+        val target = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, targetHour)
+            set(Calendar.MINUTE, targetMinute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+
+            if (timeInMillis <= now.timeInMillis) {
+                add(Calendar.DAY_OF_YEAR, 1)
+            }
+        }
+
+        return target.timeInMillis - now.timeInMillis
     }
 }
